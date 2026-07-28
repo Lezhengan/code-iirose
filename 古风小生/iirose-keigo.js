@@ -1528,10 +1528,11 @@
         var rawPetPhrase = "\u5148\u751f,\u5973\u58eb,\u541b";
         var emojiOn = true;
         var phraseOn = true;
+        var honorificOn = true;
         var SK = "iirose-keigo-settings";
 
         function getActivePool() {
-            if (!phraseOn) return [];
+            if (!phraseOn || !honorificOn) return [];
             var arr = [];
             if (rawPetPhrase && rawPetPhrase.trim()) {
                 var parts = rawPetPhrase.split(/[,\uff0c\u3001\s]+/);
@@ -1662,10 +1663,11 @@
                 rawPetPhrase = s.pp && s.pp.trim() ? s.pp : rawPetPhrase;
                 emojiOn  = s.eo!==false;
                 phraseOn = s.po!==false;
+                honorificOn = s.ho!==false;
             }catch(e){}
         }
         function saveS(){
-            localStorage.setItem(SK, JSON.stringify({pp:rawPetPhrase, eo:emojiOn, po:phraseOn}));
+            localStorage.setItem(SK, JSON.stringify({pp:rawPetPhrase, eo:emojiOn, po:phraseOn, ho:honorificOn}));
         }
 
         function buildUI(){
@@ -1721,6 +1723,9 @@
                 '<div class=r><span>\u656c\u8bed\u66ff\u6362</span>',
                 '<label class=tgl><input type=checkbox id=keigo-po'+(phraseOn?' checked':'')+'><span class=sl></span></label>',
                 '</div>',
+                '<div class=r><span>\u656c\u79f0\u540e\u7f00</span>',
+                '<label class=tgl><input type=checkbox id=keigo-ho'+(honorificOn?' checked':'')+'><span class=sl></span></label>',
+                '</div>',
                 '</div>',
                 '<div class=grp>',
                 '<span class=gl>\u656c\u79f0\u540e\u7f00\uff08\u9017\u53f7\u5206\u9694\uff09</span>',
@@ -1739,6 +1744,7 @@
 
             document.getElementById("keigo-eo").addEventListener("change",function(){emojiOn=this.checked;saveS();});
             document.getElementById("keigo-po").addEventListener("change",function(){phraseOn=this.checked;saveS();});
+            document.getElementById("keigo-ho").addEventListener("change",function(){honorificOn=this.checked;saveS();});
             document.getElementById("keigo-ph").addEventListener("input",function(){rawPetPhrase=this.value||"";saveS();});
         }
 
@@ -1756,9 +1762,10 @@
 
         window.iiroseKeigo={
             setHonorific:function(p){rawPetPhrase=p;saveS();},
+            setHonorificOn:function(b){honorificOn=b;saveS();},
             setKeigoOn:function(b){emojiOn=b;saveS();},
             setReplaceOn:function(b){phraseOn=b;saveS();},
-            getStatus:function(){return{keigoEnding:emojiOn,keigoReplace:phraseOn,pool:getActivePool(),hooked:_hooked};},
+            getStatus:function(){return{keigoEnding:emojiOn,keigoReplace:phraseOn,honorificOn:honorificOn,pool:getActivePool(),hooked:_hooked};},
             processText:processText
         };
 
