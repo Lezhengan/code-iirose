@@ -1594,14 +1594,49 @@
                     var isHome = inp.id === 'homeHolderMsgContentInputBox';
                     var curP = 0;
                     try { curP = isHome && Objs.homeHolder && Objs.homeHolder.Variable ? Objs.homeHolder.Variable.currentP : 0; } catch (e3) {}
-                    if (isHome && curP === 2) return; // 私信 tab 不接管（原逻辑本就不发送）
-                    var viaBar = isHome && curP !== 1; // 广播/信箱/系统 tab -> 弹幕
+                    if (isHome && curP === 2) return; // pm tab: leave to original (it sends nothing)
+                    var viaBar = isHome && curP !== 1; // broadcast/mail/system tab -> danmaku
                     inp.value = '';
                     _domJustTouched = true;
                     setTimeout(function () { _domJustTouched = false; }, 800);
                     try { Utils.service.moveinputDo(viaBar ? '~ ' + send : send); } catch (e2) { inp.value = before; }
                 }
             } catch (e) {}
+        }
+
+        var _origSend = null, _hooked = false;
+
+        function doHook() {
+            if (_hooked) return;
+            if (!window.socket || typeof window.socket.send !== 'function') {
+                setTimeout(doHook, 200);
+                return;
+            }
+            _origSend = window.socket.send.bind(window.socket);
+
+            window.socket.send = function(data) {
+                try {
+                    if (_domJustTouched) {
+                        _domJustTouched = false;
+                        return _origSend(data);
+                    }
+                    var str = typeof data === 'string' ? data : '';
+                    if (str && str.charCodeAt(0) === 123) {
+                        var obj = JSON.parse(str);
+                        if (obj.m && typeof obj.m === 'string') {
+                            var before = obj.m;
+                            var after = processText(before);
+                            if (after !== before) {
+                                obj.m = after;
+                                data = JSON.stringify(obj);
+                            }
+                        }
+                    }
+                } catch(e) {}
+                return _origSend(data);
+            };
+
+            _hooked = true;
         }
 
         function hookSendBtn() {
@@ -1634,6 +1669,20 @@
                     }
                 }
             } catch(e){}
+        }
+
+        function loadS(){
+            try{
+                var r=localStorage.getItem(SK);
+                var s=r?JSON.parse(r):{};
+                rawPetPhrase = s.pp && s.pp.trim() ? s.pp : rawPetPhrase;
+                emojiOn  = s.eo!==false;
+                phraseOn = s.po!==false;
+                honorificOn = s.ho!==false;
+            }catch(e){}
+        }
+        function saveS(){
+            localStorage.setItem(SK, JSON.stringify({pp:rawPetPhrase, eo:emojiOn, po:phraseOn, ho:honorificOn}));
         }
 
         function buildUI(){
